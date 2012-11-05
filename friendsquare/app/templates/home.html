@@ -1,0 +1,88 @@
+{% load leaflet_tags %}
+
+<head>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+    
+    {% leaflet_js %}
+    {% leaflet_css %}
+
+    <style>
+      .leaflet-container {
+        width: 600px;
+        height: 600px;
+      }
+    </style>
+</head>
+<body>
+    
+
+{% if social_auth.foursquare %}
+<p>Hey, {{user.username}}! <a href="{% url logout %}?next={% url home %}">Logout</a></p>
+
+<p>
+  Nice! You've checked in {{checkin_count}} time{{checkin_count|pluralize}} in your lifetime!
+<p>
+
+{% leaflet_map "map" %}
+
+<script type="text/javascript">
+  function mapInit(map, bounds) {
+    var location, marker;
+
+  {% for checkin in checkins %}
+    location = [{{checkin.data.venue.location.lat}}, {{checkin.data.venue.location.lng}}];
+    marker = L.marker(location).bindPopup('{{checkin.data.venue.name}}');
+
+    marker.addTo(map);
+  {% endfor %}
+
+  {% if city %}
+    map.setView([{{city.lat}}, {{city.lng}}], 12);
+  {% else %}
+    map.on('locationfound', function (e) {
+      var geocoder = new google.maps.Geocoder();
+      var latlng = new google.maps.LatLng(e.latlng.lat, e.latlng.lng);
+      geocoder.geocode({'latLng': latlng}, function (results, status) {
+        if (status == google.maps.GeocoderStatus.OK) {
+          for (var i = 0; i < results.length; i++) {
+            var cityIdx = results[i].types.indexOf('locality');
+            if (cityIdx > -1) {
+              var location = results[i].geometry.location;
+
+              map.setView([location.lat(), location.lng()], 12);
+
+              break;
+            }
+          }
+        } else {
+          map.setView([e.latlng.lat, e.latlng.lng], 12);
+        }
+      });
+    });
+
+    map.locate({maxZoom: 12});
+  {% endif %}
+  }
+</script>
+
+<p>W00t! You've checked in these great cities:</p>
+<ul>
+  {% for city in cities %}
+  {% if city.name %}
+  <li>
+    <a href="{% url home %}?city={{city.id}}">
+      {{city.name|default_if_none:"Unknown"}}, {{city.country.name}}
+    </a> ({{city.checkin_count}})
+  </li>
+  {% endif %}
+  {% endfor %}
+</ul>
+
+{% else %}
+<a href="{% url socialauth_begin 'foursquare' %}?next={% url home %}">
+  Connect with Foursquare
+</a>
+{% endif %}
+
+</body>

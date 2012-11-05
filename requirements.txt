@@ -1,0 +1,8 @@
+Django==1.4.2
+foursquare==20120716
+django-social-auth==0.7.8
+psycopg2==2.4.5
+dj-database-url==0.2.1
+django-leaflet==0.3.0
+django-jsonfield=0.8.11
+requests==0.14.2
